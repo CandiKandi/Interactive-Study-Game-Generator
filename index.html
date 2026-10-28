@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interactive Quiz & Game Generator</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            600: '#0284c7',
+                            700: '#0369a1',
+                            900: '#0c4a6e',
+                        },
+                        accent: {
+                            500: '#8b5cf6',
+                            600: '#7c3aed',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'Noto Sans TC', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.05); }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.5); border-radius: 3px; }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body class="h-full bg-slate-950 text-slate-100 font-sans antialiased flex flex-col selection:bg-brand-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="switchTab('config')">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-accent-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
+                    <i class="fa-solid fa-wand-magic-sparkles text-white text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-brand-500">
+                        AI Study Game Studio
+                    </h1>
+                    <p class="text-[11px] text-slate-400">Transform Textbook Images into Interactive Quizzes</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleGithubModal()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-semibold flex items-center space-x-2 transition">
+                    <i class="fa-brands fa-github text-sm"></i>
+                    <span class="hidden sm:inline">GitHub Pages Guide</span>
+                </button>
+                <div class="relative">
+                    <button onclick="toggleApiKeyInput()" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold flex items-center space-x-2 transition">
+                        <i class="fa-solid fa-key text-amber-400"></i>
+                        <span id="api-key-status-text">Set API Key</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Container -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 sm:p-6 lg:p-8 flex flex-col justify-center">
+
+        <!-- API KEY SETTINGS MODAL -->
+        <div id="api-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-solid fa-key text-amber-400"></i> Gemini API Key Settings
+                    </h3>
+                    <button onclick="toggleApiKeyInput()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <p class="text-xs text-slate-400 leading-relaxed">
+                    Provide your Gemini API key to generate quizzes using Google's <code>gemini-2.5-flash</code> model. Your key is stored securely in your browser's LocalStorage only.
+                </p>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-1">Gemini API Key</label>
+                    <input type="password" id="input-api-key" placeholder="AIzaSy..." class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-brand-500">
+                </div>
+                <div class="flex justify-end space-x-2 pt-2">
+                    <button onclick="saveApiKey()" class="px-4 py-2 bg-brand-600 hover:bg-brand-500 text-white font-bold rounded-lg text-xs transition">Save Key</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- GITHUB PAGES DEPLOYMENT MODAL -->
+        <div id="github-modal" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+            <div class="bg-slate-900 border border-slate-700 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                        <i class="fa-brands fa-github text-brand-500"></i> How to Host on GitHub Pages
+                    </h3>
+                    <button onclick="toggleGithubModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-lg"></i></button>
+                </div>
+                <ol class="list-decimal list-inside space-y-3 text-xs sm:text-sm text-slate-300 leading-relaxed">
+                    <li class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800">
+                        <strong>Create a GitHub Repository:</strong> Go to <a href="https://github.com/new" target="_blank" class="text-brand-400 underline">github.com/new</a> and name it <code>study-game-generator</code>. Set visibility to <strong>Public</strong>.
+                    </li>
+                    <li class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800">
+                        <strong>Upload this single file:</strong> Rename this HTML file to <code>index.html</code> and upload or commit it directly to the root of your repository.
+                    </li>
+                    <li class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800">
+                        <strong>Enable GitHub Pages:</strong> Go to <code>Settings</code> &rarr; <code>Pages</code> in your repository. Under <em>Build and deployment</em>, set Source to <strong>Deploy from a branch</strong>, select <code>main</code> (or <code>master</code>) branch and folder <code>/ (root)</code>, then click <strong>Save</strong>.
+                    </li>
+                    <li class="p-2.5 bg-slate-950/60 rounded-lg border border-slate-800">
+                        <strong>Share your app!</strong> Your interactive AI game studio will be live at <code>https://yourusername.github.io/study-game-generator/</code>!
+                    </li>
+                </ol>
+                <div class="flex justify-end pt-2">
+                    <button onclick="toggleGithubModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg text-xs font-semibold">Got it!</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- APP TABS / VIEWS -->
+
+        <!-- VIEW 1: CONFIGURATION & GENERATOR -->
+        <section id="view-config" class="space-y-6">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Left Panel: Image Upload Dropzone -->
+                <div class="lg:col-span-5 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-2">
+                            <h2 class="font-bold text-base text-white flex items-center gap-2">
+                                <i class="fa-solid fa-cloud-arrow-up text-brand-500"></i> 1. Upload Material Images
+                            </h2>
+                            <span id="image-count-badge" class="text-[11px] font-semibold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full border border-slate-700">0 loaded</span>
+                        </div>
+                        <p class="text-xs text-slate-400 mb-3">Upload textbook pages, worksheets, diagrams, or class notes.</p>
+
+                        <!-- Dropzone -->
+                        <div id="dropzone" onclick="document.getElementById('file-input').click()" class="border-2 border-dashed border-slate-700 hover:border-brand-500 bg-slate-950/50 hover:bg-slate-950 transition-all rounded-xl p-6 text-center cursor-pointer group">
+                            <input type="file" id="file-input" multiple accept="image/*" class="hidden" onchange="handleFileSelect(event)">
+                            <div class="w-12 h-12 mx-auto rounded-full bg-slate-800 group-hover:bg-brand-500/20 text-slate-400 group-hover:text-brand-400 flex items-center justify-center transition mb-2">
+                                <i class="fa-solid fa-images text-xl"></i>
+                            </div>
+                            <p class="text-xs font-medium text-slate-200">Click or drag & drop images here</p>
+                            <p class="text-[10px] text-slate-500 mt-1">PNG, JPG, WEBP supported (Max 5 images recommended)</p>
+                        </div>
+                    </div>
+
+                    <!-- Thumbnail List -->
+                    <div id="thumbnail-grid" class="grid grid-cols-3 gap-2 max-h-48 overflow-y-auto custom-scrollbar pt-2">
+                        <!-- Dynamic Thumbnails -->
+                    </div>
+                </div>
+
+                <!-- Right Panel: Game Settings -->
+                <div class="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-5">
+                    <h2 class="font-bold text-base text-white flex items-center gap-2">
+                        <i class="fa-solid fa-sliders text-accent-500"></i> 2. Game Settings & Customization
+                    </h2>
+
+                    <!-- Row 1: Grade Level & Language -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <!-- Grade Level -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Target Grade Level (學年等級)</label>
+                            <select id="cfg-grade" class="w-full bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs font-medium text-white focus:outline-none focus:border-brand-500">
+                                <optgroup label="Primary School 小學">
+                                    <option value="Primary 1 (小一)">Primary 1 (小一)</option>
+                                    <option value="Primary 2 (小二)">Primary 2 (小二)</option>
+                                    <option value="Primary 3 (小三)">Primary 3 (小三)</option>
+                                    <option value="Primary 4 (小四)">Primary 4 (小四)</option>
+                                    <option value="Primary 5 (小五)">Primary 5 (小五)</option>
+                                    <option value="Primary 6 (小六)" selected>Primary 6 (小六)</option>
+                                </optgroup>
+                                <optgroup label="Secondary School 中學">
+                                    <option value="Secondary 1 (中一)">Secondary 1 (中一)</option>
+                                    <option value="Secondary 2 (中二)">Secondary 2 (中二)</option>
+                                    <option value="Secondary 3 (中三)">Secondary 3 (中三)</option>
+                                    <option value="Secondary 4 (中四)">Secondary 4 (中四)</option>
+                                    <option value="Secondary 5 (中五)">Secondary 5 (中五)</option>
+                                    <option value="Secondary 6 (中六)">Secondary 6 (中六)</option>
+                                </optgroup>
+                            </select>
+                        </div>
+
+                        <!-- Language Choice -->
+                        <div>
+                            <label class="block text-xs font-semibold text-slate-300 mb-1.5">Game Language (遊戲語言)</label>
+                            <div class="grid grid-cols-3 gap-1 bg-slate-950 p-1 rounded-xl border border-slate-800">
+                                <label class="cursor-pointer text-center">
+                                    <input type="radio" name="cfg-lang" value="en" class="peer hidden">
+                                    <span class="block py-1.5 text-[11px] font-medium rounded-lg text-slate-400 peer-checked:bg-brand-600 peer-checked:text-white transition">English</span>
+                                </label>
+                                <label class="cursor-pointer text-center">
+                                    <input type="radio" name="cfg-lang" value="zh" class="peer hidden">
+                                    <span class="block py-1.5 text-[11px] font-medium rounded-lg text-slate-400 peer-checked:bg-brand-600 peer-checked:text-white transition">中文</span>
+                                </label>
+                                <label class="cursor-pointer text-center">
+                                    <input type="radio" name="cfg-lang" value="bilingual" checked class="peer hidden">
+                                    <span class="block py-1.5 text-[11px] font-medium rounded-lg text-slate-400 peer-checked:bg-brand-600 peer-checked:text-white transition">雙語 Bilingual</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Row 2: Question Types Selection -->
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <label class="text-xs font-semibold text-slate-300">Question Types (題型選擇)</label>
+                            <button onclick="selectAllQuestionTypes(true)" class="text-[10px] text-brand-400 hover:underline">Select All</button>
+                        </div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="mcq" checked class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Multiple Choice</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="tf" checked class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">True / False</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="short" checked class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Short Answer</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="long" class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Long Answer</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="case" class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Case Study</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="timeline" class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Timeline</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="picture_identify" checked class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Picture Identify</span>
+                            </label>
+                            <label class="flex items-center space-x-2 bg-slate-950/60 p-2 rounded-lg border border-slate-800 hover:border-slate-700 cursor-pointer">
+                                <input type="checkbox" value="fill_blank" checked class="cfg-qtype rounded bg-slate-900 border-slate-700 text-brand-500 focus:ring-0">
+                                <span class="text-slate-300">Fill in Blank</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Row 3: Difficulty Matrix Sliders -->
+                    <div class="space-y-3">
+                        <label class="block text-xs font-semibold text-slate-300">Question Difficulty Distribution (難度題數設定)</label>
+                        <div class="grid grid-cols-3 gap-3">
+                            <div class="bg-slate-950/80 p-3 rounded-xl border border-emerald-900/40 text-center">
+                                <span class="block text-[11px] font-bold text-emerald-400 mb-1">Easy 簡單</span>
+                                <input type="number" id="count-easy" value="3" min="0" max="10" class="w-full bg-slate-900 border border-slate-700 text-center font-bold text-emerald-400 rounded-lg py-1 text-sm focus:outline-none">
+                            </div>
+                            <div class="bg-slate-950/80 p-3 rounded-xl border border-amber-900/40 text-center">
+                                <span class="block text-[11px] font-bold text-amber-400 mb-1">Medium 中等</span>
+                                <input type="number" id="count-medium" value="3" min="0" max="10" class="w-full bg-slate-900 border border-slate-700 text-center font-bold text-amber-400 rounded-lg py-1 text-sm focus:outline-none">
+                            </div>
+                            <div class="bg-slate-950/80 p-3 rounded-xl border border-red-900/40 text-center">
+                                <span class="block text-[11px] font-bold text-red-400 mb-1">Hard 挑戰</span>
+                                <input type="number" id="count-hard" value="2" min="0" max="10" class="w-full bg-slate-900 border border-slate-700 text-center font-bold text-red-400 rounded-lg py-1 text-sm focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <button id="btn-generate" onclick="generateGameFromAI()" class="w-full py-3.5 bg-gradient-to-r from-brand-600 to-accent-600 hover:from-brand-500 hover:to-accent-500 text-white font-bold rounded-xl shadow-lg shadow-brand-500/20 transition flex items-center justify-center space-x-2">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i>
+                        <span>Generate Interactive Mini-Game</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- VIEW 2: LOADING SPINNER & STATUS -->
+        <section id="view-loading" class="hidden text-center py-16 space-y-6 max-w-lg mx-auto">
+            <div class="relative w-20 h-20 mx-auto">
+                <div class="absolute inset-0 rounded-full border-4 border-brand-500/20 animate-ping"></div>
+                <div class="w-20 h-20 rounded-full border-4 border-brand-500 border-t-transparent animate-spin flex items-center justify-center">
+                    <i class="fa-solid fa-brain text-brand-400 text-2xl"></i>
+                </div>
+            </div>
+            <div>
+                <h3 id="loading-status-title" class="text-xl font-bold text-white mb-2">Analyzing Images with Gemini 2.5 Flash...</h3>
+                <p id="loading-status-desc" class="text-xs text-slate-400 leading-relaxed">Extracting textbook text, visual diagrams, and structuring interactive questions according to your selected parameters.</p>
+            </div>
+        </section>
+
+        <!-- VIEW 3: GAME PLAY SCREEN -->
+        <section id="view-game" class="hidden space-y-6 max-w-4xl mx-auto w-full">
+            
+            <!-- Game Top Status Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-3 bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+                <div class="flex items-center space-x-3">
+                    <button onclick="confirmExitGame()" class="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-semibold transition">
+                        <i class="fa-solid fa-arrow-left mr-1"></i> Exit
+                    </button>
+                    <span id="game-q-counter" class="font-extrabold text-white text-base">Question 1 / 8</span>
+                    <span id="game-q-badge" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
+                        Easy
+                    </span>
+                </div>
+                
+                <div class="flex items-center space-x-6">
+                    <div class="flex items-center space-x-2 text-slate-400 text-xs font-medium">
+                        <i class="fa-solid fa-clock text-brand-400"></i>
+                        <span id="game-timer">00:00</span>
+                    </div>
+                    <div class="text-xs font-semibold">
+                        <span class="text-slate-400">Score: </span>
+                        <span id="game-score" class="text-amber-400 text-base font-bold">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-800">
+                <div id="game-progress-bar" class="bg-gradient-to-r from-brand-500 to-accent-500 h-full w-0 transition-all duration-300"></div>
+            </div>
+
+            <!-- Question Card -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
+                
+                <div id="game-q-type-label" class="text-[11px] font-extrabold tracking-widest text-brand-400 uppercase">
+                    MULTIPLE CHOICE
+                </div>
+
+                <!-- Picture/Diagram Reference Image if extracted/applicable -->
+                <div id="game-image-container" class="hidden bg-slate-950 p-2 rounded-xl border border-slate-800 text-center">
+                    <img id="game-extracted-img" src="" alt="Question Reference Image" class="max-h-60 mx-auto rounded-lg object-contain">
+                    <p class="text-[10px] text-slate-500 mt-1 italic">Visual reference extracted from uploaded materials</p>
+                </div>
+
+                <!-- Prompt Text -->
+                <div class="space-y-1">
+                    <h3 id="game-q-text-primary" class="text-base sm:text-xl font-bold text-white leading-relaxed">
+                        Question text goes here...
+                    </h3>
+                    <p id="game-q-text-secondary" class="text-xs sm:text-sm text-slate-400">
+                        Secondary language version...
+                    </p>
+                </div>
+
+                <!-- Options / Answer Input Box -->
+                <div id="game-input-container" class="space-y-3 pt-2">
+                    <!-- Dynamic Answer Controls -->
+                </div>
+
+                <!-- False Correction Challenge Container -->
+                <div id="game-tf-correction-box" class="hidden bg-amber-950/30 border border-amber-800/50 p-4 rounded-xl space-y-3">
+                    <div class="flex items-center space-x-2 text-amber-400 text-xs font-bold">
+                        <i class="fa-solid fa-circle-exclamation"></i>
+                        <span>Statement is FALSE! Choose/Type the correct replacement term:</span>
+                    </div>
+                    <div id="game-tf-correction-choices" class="space-y-2">
+                        <!-- Dynamic Choices -->
+                    </div>
+                </div>
+
+                <!-- Immediate Explanation & Feedback Box -->
+                <div id="game-feedback-box" class="hidden p-4 rounded-xl space-y-2 text-xs sm:text-sm">
+                    <div id="feedback-header" class="font-bold flex items-center space-x-2 text-base"></div>
+                    <div class="space-y-1 text-slate-300">
+                        <p id="feedback-citation" class="font-semibold text-brand-300"></p>
+                        <p id="feedback-explanation" class="leading-relaxed"></p>
+                    </div>
+                </div>
+
+                <!-- Next Action Controls -->
+                <div class="flex justify-end pt-4 border-t border-slate-800/80">
+                    <button id="btn-submit-answer" onclick="submitUserAnswer()" class="px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs sm:text-sm rounded-xl transition shadow-lg shadow-brand-600/20">
+                        Submit Answer
+                    </button>
+                    <button id="btn-next-question" onclick="advanceQuestion()" class="hidden px-6 py-2.5 bg-gradient-to-r from-brand-500 to-accent-600 hover:opacity-90 text-white font-bold text-xs sm:text-sm rounded-xl transition flex items-center space-x-2">
+                        <span>Next Question</span>
+                        <i class="fa-solid fa-arrow-right"></i>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+        <!-- VIEW 4: SUMMARY & ANALYTICS DASHBOARD -->
+        <section id="view-summary" class="hidden space-y-6 max-w-4xl mx-auto w-full">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 sm:p-8 text-center space-y-6 shadow-2xl">
+                
+                <div class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-brand-600 to-accent-600 flex items-center justify-center text-white text-2xl shadow-lg shadow-brand-500/30">
+                    <i class="fa-solid fa-trophy"></i>
+                </div>
+
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold text-white">Quiz Completed!</h2>
+                    <p class="text-xs text-slate-400 mt-1">Here is your comprehensive cognitive performance report</p>
+                </div>
+
+                <!-- Score Board -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-xl mx-auto">
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Total Score</span>
+                        <div id="summary-final-score" class="text-3xl font-extrabold text-brand-400 mt-1">0 / 0</div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Accuracy Rate</span>
+                        <div id="summary-accuracy" class="text-3xl font-extrabold text-emerald-400 mt-1">0%</div>
+                    </div>
+                    <div class="bg-slate-950 p-4 rounded-xl border border-slate-800">
+                        <span class="text-[10px] uppercase tracking-wider font-semibold text-slate-400">Time Taken</span>
+                        <div id="summary-time" class="text-3xl font-extrabold text-amber-400 mt-1">00:00</div>
+                    </div>
+                </div>
+
+                <!-- Strengths & Weaknesses Analysis -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+                    <div class="bg-emerald-950/30 border border-emerald-900/50 p-4 rounded-xl space-y-2">
+                        <h4 class="font-bold text-emerald-400 text-xs sm:text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-check"></i> Key Strengths (Mastered Concepts)
+                        </h4>
+                        <ul id="summary-strengths" class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                            <!-- Dynamic Strengths -->
+                        </ul>
+                    </div>
+
+                    <div class="bg-red-950/30 border border-red-900/50 p-4 rounded-xl space-y-2">
+                        <h4 class="font-bold text-red-400 text-xs sm:text-sm flex items-center gap-2">
+                            <i class="fa-solid fa-circle-xmark"></i> Weaknesses & Areas for Growth
+                        </h4>
+                        <ul id="summary-weaknesses" class="text-xs text-slate-300 space-y-1 list-disc list-inside">
+                            <!-- Dynamic Weaknesses -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Action Controls -->
+                <div class="flex flex-wrap justify-center gap-3 pt-4 border-t border-slate-800">
+                    <button onclick="switchTab('config')" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold rounded-xl text-xs transition">
+                        <i class="fa-solid fa-rotate-right mr-1.5"></i> New Game Setup
+                    </button>
+                    <button id="btn-review-wrong" onclick="startAdaptiveReviewMode()" class="px-6 py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:opacity-90 text-white font-bold rounded-xl text-xs transition shadow-lg shadow-red-600/20 flex items-center space-x-2">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Review Mistakes with AI Re-phrased Questions</span>
+                    </button>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 bg-slate-900/40 py-4 text-center text-xs text-slate-500">
+        AI Study Game Studio • Built for GitHub Pages • Powered by Gemini 2.5 Flash
+    </footer>
+
+    <!-- APP JAVASCRIPT LOGIC -->
+    <script>
+        // State Storage
+        let uploadedImagesBase64 = []; // [{ mimeType, data }]
+        let apiKey = localStorage.getItem('gemini_api_key') || '';
+        let currentGame = [];
+        let wrongQuestionsPool = []; // Missed questions for adaptive review
+        let currentQuestionIdx = 0;
+        let userScore = 0;
+        let gameTimerInterval = null;
+        let secondsElapsed = 0;
+        let isReviewMode = false;
+
+        // Sound Effects Engine (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.exponentialRampToValueAtTime(659.25, now + 0.15);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now);
+                osc.frequency.exponentialRampToValueAtTime(130.81, now + 0.25);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'click') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            updateApiKeyStatus();
+            setupDropzone();
+        });
+
+        function toggleApiKeyInput() {
+            playSound('click');
+            document.getElementById('api-modal').classList.toggle('hidden');
+        }
+
+        function toggleGithubModal() {
+            playSound('click');
+            document.getElementById('github-modal').classList.toggle('hidden');
+        }
+
+        function saveApiKey() {
+            const val = document.getElementById('input-api-key').value.trim();
+            if (val) {
+                apiKey = val;
+                localStorage.setItem('gemini_api_key', val);
+                updateApiKeyStatus();
+                toggleApiKeyInput();
+            }
+        }
+
+        function updateApiKeyStatus() {
+            const statusText = document.getElementById('api-key-status-text');
+            if (apiKey) {
+                statusText.innerText = "API Key Set ✓";
+                statusText.className = "text-emerald-400 font-semibold";
+            } else {
+                statusText.innerText = "Set API Key";
+                statusText.className = "text-amber-400 font-semibold";
+            }
+        }
+
+        // Dropzone & File Processing
+        function setupDropzone() {
+            const dz = document.getElementById('dropzone');
+            ['dragenter', 'dragover'].forEach(eName => {
+                dz.addEventListener(eName, (e) => { e.preventDefault(); dz.classList.add('border-brand-500', 'bg-slate-900'); }, false);
+            });
+            ['dragleave', 'drop'].forEach(eName => {
+                dz.addEventListener(eName, (e) => { e.preventDefault(); dz.classList.remove('border-brand-500', 'bg-slate-900'); }, false);
+            });
+            dz.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                processFiles(files);
+            });
+        }
+
+        function handleFileSelect(event) {
+            processFiles(event.target.files);
+        }
+
+        function processFiles(files) {
+            Array.from(files).forEach(file => {
+                if (!file.type.startsWith('image/')) return;
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const base64Data = e.target.result.split(',')[1];
+                    uploadedImagesBase64.push({
+                        mimeType: file.type,
+                        data: base64Data,
+                        previewUrl: e.target.result
+                    });
+                    renderThumbnails();
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function renderThumbnails() {
+            const grid = document.getElementById('thumbnail-grid');
+            const badge = document.getElementById('image-count-badge');
+            badge.innerText = `${uploadedImagesBase64.length} loaded`;
+            grid.innerHTML = '';
+
+            uploadedImagesBase64.forEach((img, idx) => {
+                const card = document.createElement('div');
+                card.className = "relative group rounded-lg overflow-hidden border border-slate-700 aspect-video bg-slate-950";
+                card.innerHTML = `
+                    <img src="${img.previewUrl}" class="w-full h-full object-cover">
+                    <button onclick="removeImage(${idx})" class="absolute top-1 right-1 bg-red-600 hover:bg-red-500 text-white w-5 h-5 rounded-full flex items-center justify-center text-[10px] opacity-0 group-hover:opacity-100 transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                `;
+                grid.appendChild(card);
+            });
+        }
+
+        function removeImage(idx) {
+            uploadedImagesBase64.splice(idx, 1);
+            renderThumbnails();
+        }
+
+        function selectAllQuestionTypes(checked) {
+            document.querySelectorAll('.cfg-qtype').forEach(cb => cb.checked = checked);
+        }
+
+        // Tab Navigation
+        function switchTab(viewName) {
+            ['config', 'loading', 'game', 'summary'].forEach(v => {
+                document.getElementById(`view-${v}`).classList.add('hidden');
+            });
+            document.getElementById(`view-${viewName}`).classList.remove('hidden');
+        }
+
+        // Call Gemini API with Exponential Backoff
+        async function fetchGeminiAPI(payload, attempt = 1) {
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`;
+            try {
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!res.ok) {
+                    if (res.status === 429 && attempt < 4) {
+                        await new Promise(r => setTimeout(r, Math.pow(2, attempt) * 1000));
+                        return fetchGeminiAPI(payload, attempt + 1);
+                    }
+                    throw new Error(`API Error ${res.status}: ${res.statusText}`);
+                }
+                return await res.json();
+            } catch (err) {
+                if (attempt < 3) {
+                    await new Promise(r => setTimeout(r, 2000));
+                    return fetchGeminiAPI(payload, attempt + 1);
+                }
+                throw err;
+            }
+        }
+
+        // Generate Game via Gemini 2.5 Flash
+        async function generateGameFromAI() {
+            playSound('click');
+            if (!apiKey) {
+                alert('Please enter your Gemini API Key first!');
+                toggleApiKeyInput();
+                return;
+            }
+            if (uploadedImagesBase64.length === 0) {
+                alert('Please upload at least one textbook/study image!');
+                return;
+            }
+
+            const grade = document.getElementById('cfg-grade').value;
+            const lang = document.querySelector('input[name="cfg-lang"]:checked').value;
+            
+            const selectedQTypes = Array.from(document.querySelectorAll('.cfg-qtype:checked')).map(cb => cb.value);
+            if (selectedQTypes.length === 0) {
+                alert('Please select at least one question type!');
+                return;
+            }
+
+            const countEasy = parseInt(document.getElementById('count-easy').value) || 0;
+            const countMedium = parseInt(document.getElementById('count-medium').value) || 0;
+            const countHard = parseInt(document.getElementById('count-hard').value) || 0;
+
+            if (countEasy + countMedium + countHard === 0) {
+                alert('Please request at least 1 question in the difficulty matrix!');
+                return;
+            }
+
+            switchTab('loading');
+
+            // Construct Gemini Payload
+            const prompt = `
+You are an expert AI Educator generating an interactive quiz mini-game directly from the attached study images.
+
+Target Parameters:
+- Target Grade Level: ${grade}
+- Language: ${lang === 'en' ? 'English Only' : lang === 'zh' ? 'Traditional Chinese Only (繁體中文)' : 'Bilingual (Both English & Traditional Chinese)'}
+- Allowed Question Types: ${selectedQTypes.join(', ')}
+- Required Difficulty Breakdown:
+  * Easy: ${countEasy} questions (direct fact recall)
+  * Medium: ${countMedium} questions (comprehension and relation)
+  * Hard: ${countHard} questions (higher-order Bloom's thinking, analysis, application, synthesis)
+
+Output JSON Schema:
+Generate a JSON array of question objects adhering strictly to this JSON structure:
+[
+  {
+    "id": 1,
+    "difficulty": "Easy" | "Medium" | "Hard",
+    "type": "mcq" | "tf" | "short" | "long" | "case" | "timeline" | "picture_identify" | "fill_blank",
+    "questionPrimary": "Primary text of question in requested language",
+    "questionSecondary": "Secondary text if bilingual, otherwise empty string",
+    "options": ["Option A", "Option B", "Option C", "Option D"], // Required for mcq and fill_blank
+    "correctAnswer": "Exact string or option index (0, 1, 2, 3 for MCQ/Fill_blank; 'true' or 'false' for TF)",
+    "isFalseCorrection": true/false, // Only for TF if false
+    "falseCorrectionPrompt": "Prompt asking user to select correct replacing term",
+    "falseCorrectionOptions": ["Correct Term A", "Wrong Term B", "Wrong Term C"],
+    "correctReplacementIndex": 0,
+    "explanationCitation": "Direct textbook quote/reference from uploaded image",
+    "explanationText": "Detailed explanation of the correct concept"
+  }
+]
+Return ONLY valid raw JSON array inside backticks. No extra text.
+`;
+
+            const parts = [
+                { text: prompt },
+                ...uploadedImagesBase64.map(img => ({
+                    inlineData: { mimeType: img.mimeType, data: img.data }
+                }))
+            ];
+
+            const payload = {
+                contents: [{ parts: parts }],
+                generationConfig: {
+                    responseMimeType: "application/json"
+                }
+            };
+
+            try {
+                const resData = await fetchGeminiAPI(payload);
+                const rawJson = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawJson) throw new Error('Empty response from AI model');
+
+                currentGame = JSON.parse(rawJson);
+                wrongQuestionsPool = [];
+                isReviewMode = false;
+                startQuizSession();
+
+            } catch (err) {
+                alert('Generation Error: ' + err.message);
+                switchTab('config');
+            }
+        }
+
+        // Quiz Session Setup
+        function startQuizSession() {
+            currentQuestionIdx = 0;
+            userScore = 0;
+            secondsElapsed = 0;
+            clearInterval(gameTimerInterval);
+            
+            gameTimerInterval = setInterval(() => {
+                secondsElapsed++;
+                const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+                const secs = String(secondsElapsed % 60).padStart(2, '0');
+                document.getElementById('game-timer').innerText = `${mins}:${secs}`;
+            }, 1000);
+
+            switchTab('game');
+            renderCurrentQuestion();
+        }
+
+        // Render Current Question Card
+        function renderCurrentQuestion() {
+            const q = currentGame[currentQuestionIdx];
+
+            document.getElementById('game-q-counter').innerText = `Question ${currentQuestionIdx + 1} / ${currentGame.length}`;
+            document.getElementById('game-score').innerText = userScore;
+            document.getElementById('game-progress-bar').style.width = `${((currentQuestionIdx + 1) / currentGame.length) * 100}%`;
+
+            // Badge
+            const badge = document.getElementById('game-q-badge');
+            badge.innerText = q.difficulty;
+            badge.className = q.difficulty === 'Easy' ? "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800"
+                           : q.difficulty === 'Medium' ? "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-950 text-amber-400 border border-amber-800"
+                           : "px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-red-950 text-red-400 border border-red-800";
+
+            document.getElementById('game-q-type-label').innerText = q.type.toUpperCase().replace('_', ' ');
+
+            // Question text
+            document.getElementById('game-q-text-primary').innerText = q.questionPrimary;
+            document.getElementById('game-q-text-secondary').innerText = q.questionSecondary || '';
+
+            // Image container if extracted
+            const imgContainer = document.getElementById('game-image-container');
+            if (q.type === 'picture_identify' && uploadedImagesBase64.length > 0) {
+                document.getElementById('game-extracted-img').src = uploadedImagesBase64[0].previewUrl;
+                imgContainer.classList.remove('hidden');
+            } else {
+                imgContainer.classList.add('hidden');
+            }
+
+            // Input Area Setup
+            const inputContainer = document.getElementById('game-input-container');
+            inputContainer.innerHTML = '';
+            document.getElementById('game-tf-correction-box').classList.add('hidden');
+            document.getElementById('game-feedback-box').classList.add('hidden');
+            document.getElementById('btn-submit-answer').classList.remove('hidden');
+            document.getElementById('btn-next-question').classList.add('hidden');
+
+            if (q.type === 'mcq' || q.type === 'fill_blank' || q.type === 'timeline' || q.type === 'case') {
+                q.options.forEach((opt, idx) => {
+                    const label = document.createElement('label');
+                    label.className = "flex items-center space-x-3 p-3.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition text-xs sm:text-sm text-slate-200";
+                    label.innerHTML = `
+                        <input type="radio" name="q-option" value="${idx}" class="text-brand-500 focus:ring-0">
+                        <span><strong>${String.fromCharCode(65 + idx)}.</strong> ${opt}</span>
+                    `;
+                    inputContainer.appendChild(label);
+                });
+            } else if (q.type === 'tf') {
+                inputContainer.innerHTML = `
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="flex items-center justify-center space-x-2 p-4 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer text-emerald-400 font-bold">
+                            <input type="radio" name="q-option" value="true" class="hidden peer">
+                            <span class="peer-checked:underline"><i class="fa-solid fa-circle-check mr-1"></i> TRUE 正確</span>
+                        </label>
+                        <label class="flex items-center justify-center space-x-2 p-4 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer text-red-400 font-bold">
+                            <input type="radio" name="q-option" value="false" class="hidden peer">
+                            <span class="peer-checked:underline"><i class="fa-solid fa-circle-xmark mr-1"></i> FALSE 錯誤</span>
+                        </label>
+                    </div>
+                `;
+            } else if (q.type === 'short' || q.type === 'long') {
+                inputContainer.innerHTML = `
+                    <textarea id="q-text-answer" rows="${q.type === 'long' ? '4' : '2'}" placeholder="Type your answer here..." class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs sm:text-sm text-white focus:outline-none focus:border-brand-500"></textarea>
+                `;
+            } else if (q.type === 'picture_identify') {
+                q.options.forEach((opt, idx) => {
+                    const label = document.createElement('label');
+                    label.className = "flex items-center space-x-3 p-3.5 bg-slate-950 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer transition text-xs sm:text-sm text-slate-200";
+                    label.innerHTML = `
+                        <input type="radio" name="q-option" value="${idx}" class="text-brand-500 focus:ring-0">
+                        <span>${opt}</span>
+                    `;
+                    inputContainer.appendChild(label);
+                });
+            }
+        }
+
+        // Submit Answer Logic
+        function submitUserAnswer() {
+            playSound('click');
+            const q = currentGame[currentQuestionIdx];
+            let isCorrect = false;
+
+            if (q.type === 'mcq' || q.type === 'fill_blank' || q.type === 'timeline' || q.type === 'case' || q.type === 'picture_identify') {
+                const selected = document.querySelector('input[name="q-option"]:checked');
+                if (!selected) return alert('Please select an answer option!');
+                isCorrect = parseInt(selected.value) === parseInt(q.correctAnswer);
+            } else if (q.type === 'tf') {
+                const selected = document.querySelector('input[name="q-option"]:checked');
+                if (!selected) return alert('Please select True or False!');
+                const val = selected.value;
+                if (val === String(q.correctAnswer)) {
+                    if (val === 'false' && q.isFalseCorrection) {
+                        // Prompt for correction choice
+                        showFalseCorrectionChallenge(q);
+                        return;
+                    } else {
+                        isCorrect = true;
+                    }
+                }
+            } else if (q.type === 'short' || q.type === 'long') {
+                const val = document.getElementById('q-text-answer').value.trim();
+                if (!val) return alert('Please type an answer!');
+                isCorrect = true; // Auto-pass textual answer with explanation feedback
+            }
+
+            finalizeAnswerEvaluation(isCorrect, q);
+        }
+
+        function showFalseCorrectionChallenge(q) {
+            const container = document.getElementById('game-tf-correction-box');
+            const choices = document.getElementById('game-tf-correction-choices');
+            choices.innerHTML = '';
+
+            q.falseCorrectionOptions.forEach((opt, idx) => {
+                const label = document.createElement('label');
+                label.className = "flex items-center space-x-2 p-2 bg-slate-950 rounded border border-slate-800 text-xs text-slate-200 cursor-pointer";
+                label.innerHTML = `
+                    <input type="radio" name="tf-repl-option" value="${idx}" class="text-amber-500">
+                    <span>${opt}</span>
+                `;
+                choices.appendChild(label);
+            });
+
+            container.classList.remove('hidden');
+            document.getElementById('btn-submit-answer').onclick = () => {
+                const selected = document.querySelector('input[name="tf-repl-option"]:checked');
+                if (!selected) return alert('Please select the correct replacement term!');
+                const isReplCorrect = parseInt(selected.value) === parseInt(q.correctReplacementIndex);
+                finalizeAnswerEvaluation(isReplCorrect, q);
+            };
+        }
+
+        function finalizeAnswerEvaluation(isCorrect, q) {
+            if (isCorrect) {
+                userScore++;
+                playSound('correct');
+            } else {
+                playSound('wrong');
+                wrongQuestionsPool.push(q);
+            }
+
+            document.getElementById('game-score').innerText = userScore;
+            document.getElementById('btn-submit-answer').classList.add('hidden');
+            document.getElementById('btn-next-question').classList.remove('hidden');
+
+            // Feedback Display
+            const fbBox = document.getElementById('game-feedback-box');
+            const fbHeader = document.getElementById('feedback-header');
+            fbBox.classList.remove('hidden', 'bg-emerald-950/80', 'border-emerald-700', 'bg-red-950/80', 'border-red-700', 'border');
+
+            if (isCorrect) {
+                fbBox.classList.add('bg-emerald-950/80', 'border-emerald-700', 'border');
+                fbHeader.className = "font-bold text-emerald-400 text-base flex items-center gap-2";
+                fbHeader.innerHTML = `<i class="fa-solid fa-circle-check"></i> Correct!`;
+            } else {
+                fbBox.classList.add('bg-red-950/80', 'border-red-700', 'border');
+                fbHeader.className = "font-bold text-red-400 text-base flex items-center gap-2";
+                fbHeader.innerHTML = `<i class="fa-solid fa-circle-xmark"></i> Incorrect!`;
+            }
+
+            document.getElementById('feedback-citation').innerText = `Textbook Reference: "${q.explanationCitation || 'Provided materials'}"`;
+            document.getElementById('feedback-explanation').innerText = q.explanationText;
+        }
+
+        function advanceQuestion() {
+            playSound('click');
+            currentQuestionIdx++;
+            if (currentQuestionIdx < currentGame.length) {
+                renderCurrentQuestion();
+            } else {
+                clearInterval(gameTimerInterval);
+                renderSummaryDashboard();
+            }
+        }
+
+        function confirmExitGame() {
+            if (confirm('Are you sure you want to exit the current quiz session?')) {
+                clearInterval(gameTimerInterval);
+                switchTab('config');
+            }
+        }
+
+        // Summary & Analytics Dashboard
+        function renderSummaryDashboard() {
+            switchTab('summary');
+
+            document.getElementById('summary-final-score').innerText = `${userScore} / ${currentGame.length}`;
+            const acc = Math.round((userScore / currentGame.length) * 100);
+            document.getElementById('summary-accuracy').innerText = `${acc}%`;
+
+            const mins = String(Math.floor(secondsElapsed / 60)).padStart(2, '0');
+            const secs = String(secondsElapsed % 60).padStart(2, '0');
+            document.getElementById('summary-time').innerText = `${mins}:${secs}`;
+
+            // Strengths and Weaknesses Lists
+            const strengthsList = document.getElementById('summary-strengths');
+            const weaknessesList = document.getElementById('summary-weaknesses');
+            strengthsList.innerHTML = '';
+            weaknessesList.innerHTML = '';
+
+            const correctCount = currentGame.length - wrongQuestionsPool.length;
+            if (correctCount > 0) {
+                strengthsList.innerHTML += `<li>Mastered ${correctCount} question concept(s) accurately.</li>`;
+            } else {
+                strengthsList.innerHTML = `<li>Review the textbook content to build foundational concepts.</li>`;
+            }
+
+            if (wrongQuestionsPool.length === 0) {
+                weaknessesList.innerHTML = `<li>No concept weaknesses detected! Outstanding performance!</li>`;
+                document.getElementById('btn-review-wrong').classList.add('hidden');
+            } else {
+                wrongQuestionsPool.forEach(wq => {
+                    weaknessesList.innerHTML += `<li>${wq.questionPrimary.substring(0, 60)}...</li>`;
+                });
+                document.getElementById('btn-review-wrong').classList.remove('hidden');
+            }
+        }
+
+        // Adaptive Remedial Review Mode (Re-phrased AI questions for missed concepts)
+        async function startAdaptiveReviewMode() {
+            playSound('click');
+            if (wrongQuestionsPool.length === 0) return;
+
+            switchTab('loading');
+            document.getElementById('loading-status-title').innerText = "Generating AI Re-phrased Remedial Questions...";
+            document.getElementById('loading-status-desc').innerText = "Creating newly-worded question variations targeting missed concepts...";
+
+            const prompt = `
+You are an adaptive AI Tutor. The student missed the following questions during their quiz:
+${JSON.stringify(wrongQuestionsPool.map(q => ({ concept: q.questionPrimary, explanation: q.explanationText })))}
+
+Tasks:
+1. Re-phrase and create NEW, distinct question variations testing the EXACT SAME missed concepts.
+2. Do NOT use identical wording.
+3. Keep the output format strictly as a JSON array adhering to the standard schema.
+`;
+
+            const payload = {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            };
+
+            try {
+                const resData = await fetchGeminiAPI(payload);
+                const rawJson = resData?.candidates?.[0]?.content?.parts?.[0]?.text;
+                if (!rawJson) throw new Error('Empty review response');
+
+                currentGame = JSON.parse(rawJson);
+                wrongQuestionsPool = [];
+                isReviewMode = true;
+                startQuizSession();
+
+            } catch (err) {
+                alert('Review Generation Error: ' + err.message);
+                switchTab('summary');
+            }
+        }
+    </script>
+</body>
+</html>
